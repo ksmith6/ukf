@@ -7,6 +7,8 @@ using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::vector;
+using std::cout;
+using std::endl;
 
 /**
  * Initializes Unscented Kalman filter
@@ -55,19 +57,21 @@ UKF::UKF() {
   VectorXd weights_;
 
   ///* State dimension
-  int n_x_ = 5;
+  n_x_ = 5;
 
   ///* Augmented state dimension
-  int n_aug_ = n_x_ + 2;
+  n_aug_ = n_x_ + 2;
 
   ///* Sigma point spreading parameter
-  double lambda_ = 3 - n_x_;
+  lambda_ = 3 - n_x_;
 
   ///* the current NIS for radar
-  double NIS_radar_ = 0.0;
+  NIS_radar_ = 0.0;
 
   ///* the current NIS for laser
-  double NIS_laser_ 0.0;
+  NIS_laser_ 0.0;
+
+  DebugMode = false;
 }
 
 UKF::~UKF() {}
@@ -77,12 +81,37 @@ UKF::~UKF() {}
  * either radar or laser.
  */
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
-  /**
-  TODO:
 
-  Complete this function! Make sure you switch between lidar and radar
-  measurements.
-  */
+  if (is_initialized_) {
+    // Yes, the filter is initialized, so process the measurement using
+    // the typical predict-correct process.
+
+    double dt = 0;  // TODO
+
+    // First, update the state and covariance to the current timestamp of the received measurement.
+    Prediction(dt);
+
+
+
+    // Second, perform the measurement update based on the measurement type.
+    if (measurement_package.sensor_type_ == MeasurementPackage::RADAR) {
+      // Radar measurment update mode.
+      UpdateRadar(measurement_package);
+    } else if (measurement_package.sensor_type_ == MeasurementPackage::LASER) {
+      // Laser Measurement Update mode.
+      UpdateLidar(measurement_package);
+    } else {
+      cout << "Received unknown measurement type" << endl;
+    }
+  } else {
+    // Initialization logic.
+
+    // TODO
+
+  }
+
+  
+
 }
 
 /**
@@ -97,6 +126,10 @@ void UKF::Prediction(double delta_t) {
   Complete this function! Estimate the object's location. Modify the state
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
+  if (DebugMode) {
+    cout << " ------- PREDICTION ------- " << endl;
+  }
+
 }
 
 /**
@@ -112,6 +145,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the lidar NIS.
   */
+  if (DebugMode) {
+    cout << " ------- LASER MEAS UPDATE ------- " << endl;
+  }
 }
 
 /**
@@ -127,4 +163,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the radar NIS.
   */
+  if (DebugMode) {
+    cout << " ------- RADAR MEAS UPDATE ------- " << endl;
+  }
 }

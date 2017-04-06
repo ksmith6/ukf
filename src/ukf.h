@@ -74,6 +74,9 @@ public:
   ///* the current NIS for laser
   double NIS_laser_;
 
+  // Flag to trigger print statements that aid in debugging.
+  bool DebugMode;
+
   /**
    * Constructor
    */
