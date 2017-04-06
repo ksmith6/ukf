@@ -52,6 +52,22 @@ UKF::UKF() {
 
   Hint: one or more values initialized above might be wildly off...
   */
+  VectorXd weights_;
+
+  ///* State dimension
+  int n_x_ = 5;
+
+  ///* Augmented state dimension
+  int n_aug_ = n_x_ + 2;
+
+  ///* Sigma point spreading parameter
+  double lambda_ = 3 - n_x_;
+
+  ///* the current NIS for radar
+  double NIS_radar_ = 0.0;
+
+  ///* the current NIS for laser
+  double NIS_laser_ 0.0;
 }
 
 UKF::~UKF() {}
