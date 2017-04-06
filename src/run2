@@ -1,0 +1,2 @@
+#!/bin/bash 
+./UnscentedKF ../data/input/sample-laser-radar-measurement-data-2.txt ../data/output/output2.txt
