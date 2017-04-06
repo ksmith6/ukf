@@ -205,14 +205,10 @@ void UKF::InitFilterRadar(MeasurementPackage meas_package) {
   // Initialize the state vector.
   x_ << px, py, sqrt(vx*vx + vy*vy), yaw, yawRate;
 
-  // Initialize the covariance matrix. 
-  // TODO - Populate with proper initialization values.
-  P_ << 0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0;
-        
+  // Initialize the covariance matrix with all zeros.
+  P_.setZero(5,5);
+
+  // Populate only the diagonal elements.
   P_(0,0) = std_laspx_ * std_laspx_;
   P_(1,1) = std_laspy_ * std_laspy_;
   P_(2,2) = 0; // TODO
@@ -225,8 +221,6 @@ void UKF::InitFilterRadar(MeasurementPackage meas_package) {
   * @param {MeasurementPackage} meas_package
   */
 void UKF::InitFilterLaser(MeasurementPackage meas_package) {
-  // TODO - Initialize the state and covariance based on a laser measurement
-
   /**
   Initialize states.
   NOTE: Initial velocity states initialized with the assumption that the object is stationary.
@@ -239,13 +233,10 @@ void UKF::InitFilterLaser(MeasurementPackage meas_package) {
   // Initialize the states with the first laser measurement.
   x_ << px, py, vMag, yaw, yawRate;
 
-  // Initialize the covariance matrix. 
-  // TODO - Populate with proper initialization values.
-  P_ << 0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0;
+  // Initialize the covariance matrix with all zeros.
+  P_.setZero(5,5);
+
+  // Populate diagonals with initial values.
   P_(0,0) = std_laspx_ * std_laspx_;
   P_(1,1) = std_laspy_ * std_laspy_;
   P_(2,2) = 0; // TODO
