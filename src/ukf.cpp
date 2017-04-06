@@ -89,10 +89,10 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     Prediction(dt);
 
     // Second, perform the measurement update based on the measurement type.
-    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+    if (meas_package.sensor_type_ == MeasurementPackage::RADAR && use_radar_) {
       // Radar measurment update mode.
       UpdateRadar(meas_package);
-    } else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+    } else if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
       // Laser Measurement Update mode.
       UpdateLidar(meas_package);
     } else {
@@ -175,14 +175,14 @@ void UKF::Initialization(MeasurementPackage meas_package) {
   previous_timestamp_ = meas_package.timestamp_;
 
   // Next, initialize the state and covariance according to the measurement type.
-  if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+  if (meas_package.sensor_type_ == MeasurementPackage::RADAR && use_radar_) {
     // Radar measurment update mode.
     InitFilterRadar(meas_package);
     if (DebugMode_) { 
       cout << "Radar measurement" << endl;
     }
     is_initialized_ = true;
-  } else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+  } else if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
     // Laser Measurement Update mode.
     InitFilterLaser(meas_package);
     if (DebugMode_) { 
@@ -190,7 +190,7 @@ void UKF::Initialization(MeasurementPackage meas_package) {
     }
     is_initialized_ = true;
   } else {
-    // Error-handling code for unknown measurement types.
+    // Error-handling code for unknown measurement types or all measurements disabled.
     // Perform no initialization.
     cout << "Received unknown measurement type" << endl;
     is_initialized_ = false;
