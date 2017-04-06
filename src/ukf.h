@@ -17,6 +17,9 @@ public:
   ///* initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;
 
+  // Timestamp of previous measurement
+  double previous_timestamp_;
+
   ///* if this is false, laser measurements will be ignored (except for init)
   bool use_laser_;
 
@@ -111,6 +114,9 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+
+  void InitFilterRadar(MeasurementPackage meas_package);
+  void InitFilterLaser(MeasurementPackage meas_package);
 };
 
 #endif /* UKF_H */
