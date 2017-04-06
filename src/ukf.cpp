@@ -48,13 +48,9 @@ UKF::UKF() {
   std_radrd_ = 0.3;
 
   /**
-  TODO:
-
-  Complete the initialization. See ukf.h for other member properties.
-
   Hint: one or more values initialized above might be wildly off...
   */
-  VectorXd weights_;
+  VectorXd weights_; // TODO
 
   ///* State dimension
   n_x_ = 5;
@@ -69,9 +65,9 @@ UKF::UKF() {
   NIS_radar_ = 0.0;
 
   ///* the current NIS for laser
-  NIS_laser_ 0.0;
+  NIS_laser_ = 0.0;
 
-  DebugMode = false;
+  DebugMode_ = false;
 }
 
 UKF::~UKF() {}
@@ -94,12 +90,12 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
 
     // Second, perform the measurement update based on the measurement type.
-    if (measurement_package.sensor_type_ == MeasurementPackage::RADAR) {
+    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
       // Radar measurment update mode.
-      UpdateRadar(measurement_package);
-    } else if (measurement_package.sensor_type_ == MeasurementPackage::LASER) {
+      UpdateRadar(meas_package);
+    } else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
       // Laser Measurement Update mode.
-      UpdateLidar(measurement_package);
+      UpdateLidar(meas_package);
     } else {
       cout << "Received unknown measurement type" << endl;
     }
@@ -126,7 +122,7 @@ void UKF::Prediction(double delta_t) {
   Complete this function! Estimate the object's location. Modify the state
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
-  if (DebugMode) {
+  if (DebugMode_) {
     cout << " ------- PREDICTION ------- " << endl;
   }
 
@@ -145,7 +141,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the lidar NIS.
   */
-  if (DebugMode) {
+  if (DebugMode_) {
     cout << " ------- LASER MEAS UPDATE ------- " << endl;
   }
 }
@@ -163,7 +159,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the radar NIS.
   */
-  if (DebugMode) {
+  if (DebugMode_) {
     cout << " ------- RADAR MEAS UPDATE ------- " << endl;
   }
 }

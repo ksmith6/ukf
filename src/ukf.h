@@ -75,7 +75,7 @@ public:
   double NIS_laser_;
 
   // Flag to trigger print statements that aid in debugging.
-  bool DebugMode;
+  bool DebugMode_;
 
   /**
    * Constructor
