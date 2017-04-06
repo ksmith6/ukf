@@ -115,6 +115,7 @@ public:
    */
   void UpdateRadar(MeasurementPackage meas_package);
 
+  void Initialization(MeasurementPackage meas_package);
   void InitFilterRadar(MeasurementPackage meas_package);
   void InitFilterLaser(MeasurementPackage meas_package);
 };

@@ -67,7 +67,7 @@ UKF::UKF() {
   ///* the current NIS for laser
   NIS_laser_ = 0.0;
 
-  DebugMode_ = false;
+  DebugMode_ = true;
 }
 
 UKF::~UKF() {}
@@ -102,23 +102,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     }
   } else {
     // Initialization logic.
-
-    // First, set the timestamp.
-    previous_timestamp_ = meas_package.timestamp_;
-
-    // Next, initialize the state and covariance according to the measurement type.
-    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
-      // Radar measurment update mode.
-      InitFilterRadar(meas_package);
-    } else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
-      // Laser Measurement Update mode.
-      InitFilterLaser(meas_package);
-    } else {
-      // Error-handling code for unknown measurement types.
-      // Perform no initialization.
-      cout << "Received unknown measurement type" << endl;
-    }
-
+    Initialization(meas_package);
   }
 
   
@@ -176,6 +160,40 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   */
   if (DebugMode_) {
     cout << " ------- RADAR MEAS UPDATE ------- " << endl;
+  }
+}
+
+/**
+  * Initializes the filter state and covariance with some measurement.
+  * @param {MeasurementPackage} meas_package
+  */
+void UKF::Initialization(MeasurementPackage meas_package) {
+  if (DebugMode_) {
+    cout << "Initializing filter with ";
+  }
+  // First, set the timestamp.
+  previous_timestamp_ = meas_package.timestamp_;
+
+  // Next, initialize the state and covariance according to the measurement type.
+  if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+    // Radar measurment update mode.
+    InitFilterRadar(meas_package);
+    if (DebugMode_) { 
+      cout << "Radar measurement" << endl;
+    }
+    is_initialized_ = true;
+  } else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+    // Laser Measurement Update mode.
+    InitFilterLaser(meas_package);
+    if (DebugMode_) { 
+      cout << "Laser measurement" << endl;
+    }
+    is_initialized_ = true;
+  } else {
+    // Error-handling code for unknown measurement types.
+    // Perform no initialization.
+    cout << "Received unknown measurement type" << endl;
+    is_initialized_ = false;
   }
 }
 
