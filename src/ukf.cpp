@@ -125,7 +125,112 @@ void UKF::Prediction(double delta_t) {
     cout << " ------- PREDICTION ------- " << endl;
   }
 
+  /**
+  1) Generate sigma points
+  2) Predict sigma points
+  3) Predict mean and covariance
+  */
+
+  // ======== 1) Generate Sigma Points ==============
+  // Generate matrix to hold sigma points.
+  MatrixXd Xsig = MatrixXd(n_x_, 2*n_x_+1);
+  
+  // Generate sigma points
+  GenerateSigmaPoints(&Xsig);
+
+  // ======== 2) Predict Sigma Points ===============
+  // SigmaPointPrediction(MatrixXd* Xsig_out);
+
+  // ======== 3) Predict mean and covariance ========
+  //PredictMeanAndCovariance(VectorXd* x_pred, MatrixXd* P_pred);
+
+
+
 }
+
+void UKF::GenerateSigmaPoints(MatrixXd* Xsig_out) {
+
+  // Create matrix to hold sigma points
+  MatrixXd Xsig = MatrixXd(n_x_, 2*n_x_ + 1);
+
+  // Compute square root of covariance
+  MatrixXd A = P_.llt().matrixL();
+
+  // Store the mean in the first column.
+  Xsig.col(0) = x_;
+  
+  // Compute the spreading parameter
+  float sig = sqrt(lambda_ + n_x_);
+
+  for (int i=0; i<n_x_; i++) {
+      Xsig.col(i+1)      = x_ + sig * A.col(i);
+      Xsig.col(i+1+n_x_) = x_ - sig * A.col(i);
+  }
+
+  // Write output matrix to memory.
+  *Xsig_out = Xsig;
+}
+
+void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
+
+  //set augmented dimension
+  int n_aug = n_x_ + 2;
+
+  //create augmented mean vector
+  VectorXd x_aug = VectorXd(n_aug);
+
+  //create augmented state covariance
+  MatrixXd P_aug = MatrixXd(n_aug, n_aug);
+
+  //create sigma point matrix
+  MatrixXd Xsig_aug = MatrixXd(n_aug, 2 * n_aug + 1);
+ 
+  //create augmented mean state
+  x_aug.head(5) = x_;
+  x_aug(5) = 0;
+  x_aug(6) = 0;
+
+  //create augmented covariance matrix
+  P_aug.fill(0.0);
+  P_aug.topLeftCorner(5,5) = P_;
+  P_aug(5,5) = std_a_ * std_a_;
+  P_aug(6,6) = std_yawdd_ * std_yawdd_;
+
+  //create square root matrix
+  MatrixXd L = P_aug.llt().matrixL();
+
+  //create augmented sigma points
+  Xsig_aug.col(0)  = x_aug;
+  float sig = sqrt(lambda_ + n_aug);
+  for (int i = 0; i< n_aug; i++)
+  {
+    Xsig_aug.col(i+1)       = x_aug + sig * L.col(i);
+    Xsig_aug.col(i+1+n_aug) = x_aug - sig * L.col(i);
+  }
+  
+/*******************************************************************************
+ * Student part end
+ ******************************************************************************/
+
+  //print result
+  std::cout << "Xsig_aug = " << std::endl << Xsig_aug << std::endl;
+
+  //write result
+  *Xsig_out = Xsig_aug;
+
+/* expected result:
+   Xsig_aug =
+  5.7441  5.85768   5.7441   5.7441   5.7441   5.7441   5.7441   5.7441  5.63052   5.7441   5.7441   5.7441   5.7441   5.7441   5.7441
+    1.38  1.34566  1.52806     1.38     1.38     1.38     1.38     1.38  1.41434  1.23194     1.38     1.38     1.38     1.38     1.38
+  2.2049  2.28414  2.24557  2.29582   2.2049   2.2049   2.2049   2.2049  2.12566  2.16423  2.11398   2.2049   2.2049   2.2049   2.2049
+  0.5015  0.44339 0.631886 0.516923 0.595227   0.5015   0.5015   0.5015  0.55961 0.371114 0.486077 0.407773   0.5015   0.5015   0.5015
+  0.3528 0.299973 0.462123 0.376339  0.48417 0.418721   0.3528   0.3528 0.405627 0.243477 0.329261  0.22143 0.286879   0.3528   0.3528
+       0        0        0        0        0        0  0.34641        0        0        0        0        0        0 -0.34641        0
+       0        0        0        0        0        0        0  0.34641        0        0        0        0        0        0 -0.34641
+*/
+
+}
+
 
 /**
  * Updates the state and the state covariance matrix using a laser measurement.
