@@ -273,7 +273,7 @@ void UKF::SigmaPointPrediction(MatrixXd* Xsig_out, MatrixXd* Xsig_pred, double d
 
   //write result
   //*Xsig_out = Xsig_pred;
-  return Xsig_pred;
+  //return Xsig_pred;
 }
 
 /**
