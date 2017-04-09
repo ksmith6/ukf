@@ -146,7 +146,7 @@ void UKF::Prediction(double delta_t) {
   SigmaPointPrediction(&Xsig, &Xsig_pred, delta_t);
 
   // ======== 3) Predict mean and covariance ========
-  //PredictMeanAndCovariance(VectorXd* x_pred, MatrixXd* P_pred);
+  PredictMeanAndCovariance(&x_, &P_, &Xsig_pred);
 
 
 
@@ -176,7 +176,9 @@ void UKF::GenerateSigmaPoints(MatrixXd* Xsig_out) {
 }
 
 void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
-
+  if (DebugMode_) {
+    cout << "  a) Generating Augmented Sigma Points" << endl;
+  }
   //set augmented dimension
   int n_aug = n_x_ + 2;
 
@@ -217,26 +219,26 @@ void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
 }
 
 void UKF::SigmaPointPrediction(MatrixXd* Xsig_out, MatrixXd* Xsig_pred, double delta_t) {
-
+  if (DebugMode_) {
+    cout << "  b) Predicting Sigma Points Forward" << endl;
+  }
   //set augmented dimension
   int n_aug = n_x_ + 2;
 
   //create matrix with predicted sigma points as columns
   // MatrixXd Xsig_pred = MatrixXd(n_x_, 2 * n_aug + 1);
 
-  //double delta_t = 0.1; //time diff in sec
-
   //predict sigma points
   for (int i = 0; i< 2*n_aug+1; i++)
   {
     //extract values for better readability
-    double p_x = Xsig_out(0,i); // <------- This chunk of code (230-236) is preventing compilation.
-    double p_y = Xsig_out(1,i);
-    double v = Xsig_out(2,i);
-    double yaw = Xsig_out(3,i);
-    double yawd = Xsig_out(4,i);
-    double nu_a = Xsig_out(5,i);
-    double nu_yawdd = Xsig_out(6,i);
+    double p_x = (*Xsig_out)(0,i); // <------- This chunk of code (230-236) is preventing compilation.
+    double p_y = (*Xsig_out)(1,i);
+    double v = (*Xsig_out)(2,i);
+    double yaw = (*Xsig_out)(3,i);
+    double yawd = (*Xsig_out)(4,i);
+    double nu_a = (*Xsig_out)(5,i);
+    double nu_yawdd = (*Xsig_out)(6,i);
 
     //predicted state values
     double px_p, py_p;
@@ -264,16 +266,78 @@ void UKF::SigmaPointPrediction(MatrixXd* Xsig_out, MatrixXd* Xsig_pred, double d
     yawd_p = yawd_p + nu_yawdd*delta_t;
 
     //write predicted sigma point into right column
-    Xsig_pred(0,i) = px_p;
-    Xsig_pred(1,i) = py_p;
-    Xsig_pred(2,i) = v_p;
-    Xsig_pred(3,i) = yaw_p;
-    Xsig_pred(4,i) = yawd_p;
+    (*Xsig_pred)(0,i) = px_p;
+    (*Xsig_pred)(1,i) = py_p;
+    (*Xsig_pred)(2,i) = v_p;
+    (*Xsig_pred)(3,i) = yaw_p;
+    (*Xsig_pred)(4,i) = yawd_p;
   }
 
   //write result
   //*Xsig_out = Xsig_pred;
   //return Xsig_pred;
+}
+
+void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out, MatrixXd* Xsig_pred) {
+
+  if (DebugMode_) {
+    cout << "  c) Predicting mean and covariance" << endl;
+  }
+
+  //set augmented dimension
+  int n_aug = n_x_ + 2;
+
+  //define spreading parameter
+  double lambda = 3 - n_aug;
+
+  //create vector for weights
+  VectorXd weights = VectorXd(2*n_aug+1);
+  
+  //create vector for predicted state
+  VectorXd x = VectorXd(n_x_);
+
+  //create covariance matrix for prediction
+  MatrixXd P = MatrixXd(n_x_, n_x_);
+
+
+/*******************************************************************************
+ * Student part begin
+ ******************************************************************************/
+
+  // set weights
+  double weight_0 = lambda/(lambda+n_aug);
+  double weight = 0.5/(n_aug+lambda);
+  weights.fill(weight);
+  weights(0) = weight_0;
+
+
+  //predicted state mean
+  x.fill(0.0);
+  for (int i = 0; i < 2 * n_aug + 1; i++) {  //iterate over sigma points
+    x = x+ weights(i) * (*Xsig_pred).col(i);
+  }
+
+  //predicted state covariance matrix
+  P.fill(0.0);
+  for (int i = 0; i < 2 * n_aug + 1; i++) {  //iterate over sigma points
+
+    // state difference
+    VectorXd x_diff = (*Xsig_pred).col(i) - x;
+    //angle normalization
+    while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
+    while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
+
+    P = P + weights(i) * x_diff * x_diff.transpose() ;
+  }
+
+
+/*******************************************************************************
+ * Student part end
+ ******************************************************************************/
+
+  //write result
+  *x_out = x;
+  *P_out = P;
 }
 
 /**
