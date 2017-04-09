@@ -120,6 +120,8 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+  void PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out, MatrixXd* Xsig_pred);
+
 
   void Initialization(MeasurementPackage meas_package);
   void InitFilterRadar(MeasurementPackage meas_package);
