@@ -59,7 +59,7 @@ UKF::UKF() {
   n_aug_ = n_x_ + 2;
 
   ///* Sigma point spreading parameter
-  lambda_ = 3 - n_x_;
+  lambda_ = 3 - n_aug_;
 
   ///* the current NIS for radar
   NIS_radar_ = 0.0;
@@ -68,6 +68,11 @@ UKF::UKF() {
   NIS_laser_ = 0.0;
 
   DebugMode_ = true;
+
+  // Added variables
+
+  // Container for UKF sigma points.
+  MatrixXd Xsig_; 
 }
 
 UKF::~UKF() {}
@@ -133,20 +138,19 @@ void UKF::Prediction(double delta_t) {
 
   // ======== 1) Generate Sigma Points ==============
   // Generate matrix to hold sigma points.
-  int n_aug = n_x_ + 2;
-  MatrixXd Xsig = MatrixXd(n_aug, 2*n_x_+1);
+  Xsig_ = MatrixXd(n_aug_, 2*n_x_+1);
   
   // Generate augmented sigma points
-  AugmentedSigmaPoints(&Xsig);
+  AugmentedSigmaPoints();
 
   // ======== 2) Predict Sigma Points ===============
   // MatrixXd Xsig_pred = MatrixXd(n_aug, )
-  MatrixXd Xsig_pred = MatrixXd(n_x_, 2 * n_aug + 1);
+  // MatrixXd Xsig_pred = MatrixXd(n_x_, 2 * n_aug_ + 1);
   //SigmaPointPrediction(&Xsig_pred);
-  SigmaPointPrediction(&Xsig, &Xsig_pred, delta_t);
+  SigmaPointPrediction(delta_t);
 
   // ======== 3) Predict mean and covariance ========
-  PredictMeanAndCovariance(&x_, &P_, &Xsig_pred);
+  PredictMeanAndCovariance();
 
 
 
@@ -175,21 +179,19 @@ void UKF::GenerateSigmaPoints(MatrixXd* Xsig_out) {
   *Xsig_out = Xsig;
 }
 
-void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
+void UKF::AugmentedSigmaPoints() {
   if (DebugMode_) {
     cout << "  a) Generating Augmented Sigma Points" << endl;
   }
-  //set augmented dimension
-  int n_aug = n_x_ + 2;
 
   //create augmented mean vector
-  VectorXd x_aug = VectorXd(n_aug);
+  VectorXd x_aug = VectorXd(n_aug_);
 
   //create augmented state covariance
-  MatrixXd P_aug = MatrixXd(n_aug, n_aug);
+  MatrixXd P_aug = MatrixXd(n_aug_, n_aug_);
 
   //create sigma point matrix
-  MatrixXd Xsig_aug = MatrixXd(n_aug, 2 * n_aug + 1);
+  MatrixXd Xsig_aug = MatrixXd(n_aug_, 2 * n_aug_ + 1);
  
   //create augmented mean state
   x_aug.head(5) = x_;
@@ -207,38 +209,39 @@ void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
 
   //create augmented sigma points
   Xsig_aug.col(0)  = x_aug;
-  float sig = sqrt(lambda_ + n_aug);
-  for (int i = 0; i< n_aug; i++)
+  float sig = sqrt(lambda_ + n_aug_);
+  for (int i = 0; i< n_aug_; i++)
   {
     Xsig_aug.col(i+1)       = x_aug + sig * L.col(i);
-    Xsig_aug.col(i+1+n_aug) = x_aug - sig * L.col(i);
+    Xsig_aug.col(i+1+n_aug_) = x_aug - sig * L.col(i);
   }
 
   //write result
-  *Xsig_out = Xsig_aug;
+  Xsig_ = Xsig_aug;
 }
 
-void UKF::SigmaPointPrediction(MatrixXd* Xsig_out, MatrixXd* Xsig_pred, double delta_t) {
+void UKF::SigmaPointPrediction(double delta_t) {
+  // MatrixXd* Xsig_out, 
+  // MatrixXd* Xsig_pred, 
+
   if (DebugMode_) {
     cout << "  b) Predicting Sigma Points Forward" << endl;
   }
-  //set augmented dimension
-  int n_aug = n_x_ + 2;
 
   //create matrix with predicted sigma points as columns
   // MatrixXd Xsig_pred = MatrixXd(n_x_, 2 * n_aug + 1);
 
   //predict sigma points
-  for (int i = 0; i< 2*n_aug+1; i++)
+  for (int i = 0; i< 2*n_aug_+1; i++)
   {
     //extract values for better readability
-    double p_x = (*Xsig_out)(0,i);
-    double p_y = (*Xsig_out)(1,i);
-    double v = (*Xsig_out)(2,i);
-    double yaw = (*Xsig_out)(3,i);
-    double yawd = (*Xsig_out)(4,i);
-    double nu_a = (*Xsig_out)(5,i);
-    double nu_yawdd = (*Xsig_out)(6,i);
+    double p_x = Xsig_(0,i);
+    double p_y = Xsig_(1,i);
+    double v = Xsig_(2,i);
+    double yaw = Xsig_(3,i);
+    double yawd = Xsig_(4,i);
+    double nu_a = Xsig_(5,i);
+    double nu_yawdd = Xsig_(6,i);
 
     //predicted state values
     double px_p, py_p;
@@ -266,28 +269,22 @@ void UKF::SigmaPointPrediction(MatrixXd* Xsig_out, MatrixXd* Xsig_pred, double d
     yawd_p = yawd_p + nu_yawdd*delta_t;
 
     //write predicted sigma point into right column
-    (*Xsig_pred)(0,i) = px_p;
-    (*Xsig_pred)(1,i) = py_p;
-    (*Xsig_pred)(2,i) = v_p;
-    (*Xsig_pred)(3,i) = yaw_p;
-    (*Xsig_pred)(4,i) = yawd_p;
+    Xsig_(0,i) = px_p;
+    Xsig_(1,i) = py_p;
+    Xsig_(2,i) = v_p;
+    Xsig_(3,i) = yaw_p;
+    Xsig_(4,i) = yawd_p;
   }
 }
 
-void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out, MatrixXd* Xsig_pred) {
+void UKF::PredictMeanAndCovariance() {
 
   if (DebugMode_) {
     cout << "  c) Predicting mean and covariance" << endl;
   }
 
-  //set augmented dimension
-  int n_aug = n_x_ + 2;
-
-  //define spreading parameter
-  double lambda = 3 - n_aug;
-
   //create vector for weights
-  VectorXd weights = VectorXd(2*n_aug+1);
+  VectorXd weights = VectorXd(2 * n_aug_ + 1);
   
   //create vector for predicted state
   VectorXd x = VectorXd(n_x_);
@@ -297,40 +294,36 @@ void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out, MatrixXd* X
 
   if (DebugMode_) { cout << "    1) Filling weights" << endl; }
   // set weights
-  double weight_0 = lambda/(lambda+n_aug);
-  double weight = 0.5/(n_aug+lambda);
-  weights.fill(weight);
-  weights(0) = weight_0;
-  if (DebugMode_) { cout << "       weights = " << weights << endl; }
+  double weight_0 = lambda_/(lambda_ + n_aug_);
+  double weight = 0.5/(n_aug_+lambda_);
+  weights_.fill(weight);
+  weights_(0) = weight_0;
+  if (DebugMode_) { cout << "       weights = " << weights_ << endl; }
 
   //predicted state mean
   x.fill(0.0);
-  for (int i = 0; i < 2 * n_aug + 1; i++) {  //iterate over sigma points
-    x = x+ weights(i) * (*Xsig_pred).col(i);
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //iterate over sigma points
+    x = x+ weights_(i) * Xsig_.col(i);
   }
 
   //predicted state covariance matrix
   P.fill(0.0);
-  for (int i = 0; i < 2 * n_aug + 1; i++) {  //iterate over sigma points
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //iterate over sigma points
 
     // state difference
-    VectorXd x_diff = (*Xsig_pred).col(i) - x;
+    VectorXd x_diff = Xsig_.col(i) - x;
     
     if (DebugMode_) { cout << "x_diff = " << x_diff << endl; }
 
     //angle normalization
-    if (x_diff(3)> M_PI) x_diff(3) = remainder(x_diff(3), (2.*M_PI)) - M_PI;
-    if (x_diff(3)<-M_PI) x_diff(3) = remainder(x_diff(3), (2.*M_PI)) + M_PI;
+    x_diff(3) = angleNormalization(x_diff(3));
 
-    //while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
-    //while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
-
-    P = P + weights(i) * x_diff * x_diff.transpose() ;
+    P = P + weights_(i) * x_diff * x_diff.transpose() ;
   }
 
-  //write result
-  *x_out = x;
-  *P_out = P;
+  // write result
+  x_ = x;
+  P_ = P;
 }
 
 /**

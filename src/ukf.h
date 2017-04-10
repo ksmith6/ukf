@@ -33,7 +33,7 @@ public:
   MatrixXd P_;
 
   ///* predicted sigma points matrix
-  MatrixXd Xsig_pred_;
+  MatrixXd Xsig_;
 
   ///* time when the state is true, in us
   long long time_us_;
@@ -80,6 +80,7 @@ public:
   // Flag to trigger print statements that aid in debugging.
   bool DebugMode_;
 
+
   /**
    * Constructor
    */
@@ -103,9 +104,9 @@ public:
    */
   void Prediction(double delta_t);
   void GenerateSigmaPoints(MatrixXd* Xsig_out);
-  void AugmentedSigmaPoints(MatrixXd* Xsig_out);
-  void SigmaPointPrediction(MatrixXd* Xsig_out, MatrixXd* Xsig_pred, double delta_t);
-  void PredictMeanAndCovariance(VectorXd* x_pred, MatrixXd* P_pred, MatrixXd* Xsig_pred);
+  void AugmentedSigmaPoints();
+  void SigmaPointPrediction(double delta_t);
+  void PredictMeanAndCovariance();
   void PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out);
   void UpdateState(VectorXd* x_out, MatrixXd* P_out);
 
