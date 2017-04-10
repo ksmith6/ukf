@@ -83,6 +83,16 @@ public:
   // Flag to trigger print statements that aid in debugging.
   bool DebugMode_;
 
+  MatrixXd Zsig_radar_;
+  MatrixXd Zsig_laser_;
+
+  VectorXd z_pred_radar_;
+  VectorXd z_pred_laser_;
+
+  MatrixXd S_radar_;
+  MatrixXd S_laser_;
+
+
 
   /**
    * Constructor
@@ -110,9 +120,7 @@ public:
   void AugmentedSigmaPoints();
   void SigmaPointPrediction(double delta_t);
   void PredictMeanAndCovariance();
-  void PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out);
-  void UpdateState(VectorXd* x_out, MatrixXd* P_out);
-
+  
   /**
    * Updates the state and the state covariance matrix using a laser measurement
    * @param meas_package The measurement at k+1
@@ -124,8 +132,8 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
-  void PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out, MatrixXd* Xsig_pred);
-
+  void PredictRadarMeasurement();
+  void UpdateState(MatrixXd Zsig, VectorXd z_pred, MatrixXd S, VectorXd z);
 
   void Initialization(MeasurementPackage meas_package);
   void InitFilterRadar(MeasurementPackage meas_package);
