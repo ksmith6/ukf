@@ -126,6 +126,8 @@ public:
   void Initialization(MeasurementPackage meas_package);
   void InitFilterRadar(MeasurementPackage meas_package);
   void InitFilterLaser(MeasurementPackage meas_package);
+
+  double angleNormalization(double angle);
 };
 
 #endif /* UKF_H */

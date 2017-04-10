@@ -328,11 +328,6 @@ void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out, MatrixXd* X
     P = P + weights(i) * x_diff * x_diff.transpose() ;
   }
 
-
-/*******************************************************************************
- * Student part end
- ******************************************************************************/
-
   //write result
   *x_out = x;
   *P_out = P;
@@ -425,9 +420,6 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out, MatrixXd* Xs
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
 
-/*******************************************************************************
- * Student part begin
- ******************************************************************************/
 
   //transform sigma points into measurement space
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
@@ -494,6 +486,16 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out, MatrixXd* Xs
   *S_out = S;
 }
 
+
+double UKF::angleNormalization(double angle) {
+  if (angle > M_PI) {
+    return remainder(angle, (2.*M_PI)) - M_PI;
+  } else if (angle < -M_PI) {
+    return remainder(angle, (2.*M_PI)) + M_PI;
+  } else {
+    return angle;
+  }
+}
 
 
 /**
