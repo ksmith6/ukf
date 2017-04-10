@@ -486,7 +486,10 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out, MatrixXd* Xs
   *S_out = S;
 }
 
-
+/**
+  * Wraps the input angle into the [-pi pi] domain without resorting to loops.
+  * @param {double} angle
+  */
 double UKF::angleNormalization(double angle) {
   if (angle > M_PI) {
     return remainder(angle, (2.*M_PI)) - M_PI;
