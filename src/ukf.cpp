@@ -129,7 +129,7 @@ void UKF::Prediction(double delta_t) {
   Complete this function! Estimate the object's location. Modify the state
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
-  bool DebugThis = true;
+  bool DebugThis = false;
 
   if (DebugMode_) {
     cout << " ------- PREDICTION ------- " << endl;
@@ -164,6 +164,10 @@ void UKF::Prediction(double delta_t) {
 
 }
 
+/**
+  * Deprecated.  
+  *   Generated sigma points for non-augmented state. 
+  */
 void UKF::GenerateSigmaPoints(MatrixXd* Xsig_out) {
 
   // Create matrix to hold sigma points
@@ -363,7 +367,7 @@ void UKF::SigmaPointPrediction(double delta_t) {
   */
 void UKF::PredictMeanAndCovariance() {
 
-  bool DebugThis = true;
+  bool DebugThis = false;
   bool TestMode = false;
 
   if (DebugMode_) {
@@ -431,7 +435,7 @@ void UKF::PredictMeanAndCovariance() {
     // state difference
     VectorXd x_diff = Xsig_pred_.col(i) - x;
     
-    if (DebugMode_) { cout << "x_diff = " << x_diff << endl; }
+    if (DebugMode_ && DebugThis) { cout << "x_diff = " << x_diff << endl; }
 
     //angle normalization
     x_diff(3) = angleNormalization(x_diff(3));
@@ -495,6 +499,13 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the radar NIS.
   */
+
+  bool TestMode = true;
+  if (TestMode) {
+    
+  }
+
+
   if (DebugMode_) {
     cout << " ------- RADAR MEAS UPDATE ------- " << endl;
   }
@@ -510,44 +521,38 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
 /**
  * Generates predicted radar measurements. 
+ * Unit Test (TestMode=true) indicates it is functioning properly.
  */
 void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out, MatrixXd* Xsig_pred) {
+
+  bool TestMode = false;
 
   if (DebugMode_) { cout << "  a) Predict Radar Measurement" << endl; }
 
   //set measurement dimension, radar can measure r, phi, and r_dot
   int n_z = 3;
 
-  //define spreading parameter
-  double lambda = 3 - n_aug_;
+  if (TestMode) {
+    //radar measurement noise standard deviation radius in m
+    std_radr_ = 0.3;
 
-  //set vector for weights
-  VectorXd weights = VectorXd(2*n_aug_+1);
+    //radar measurement noise standard deviation angle in rad
+    std_radphi_ = 0.0175;
+
+    //radar measurement noise standard deviation radius change in m/s
+    std_radrd_ = 0.1;
+
+    //create example matrix with predicted sigma points
+    Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
+    Xsig_pred_ <<
+          5.9374,  6.0640,   5.925,  5.9436,  5.9266,  5.9374,  5.9389,  5.9374,  5.8106,  5.9457,  5.9310,  5.9465,  5.9374,  5.9359,  5.93744,
+            1.48,  1.4436,   1.660,  1.4934,  1.5036,    1.48,  1.4868,    1.48,  1.5271,  1.3104,  1.4787,  1.4674,    1.48,  1.4851,    1.486,
+           2.204,  2.2841,  2.2455,  2.2958,   2.204,   2.204,  2.2395,   2.204,  2.1256,  2.1642,  2.1139,   2.204,   2.204,  2.1702,   2.2049,
+          0.5367, 0.47338, 0.67809, 0.55455, 0.64364, 0.54337,  0.5367, 0.53851, 0.60017, 0.39546, 0.51900, 0.42991, 0.530188,  0.5367, 0.535048,
+           0.352, 0.29997, 0.46212, 0.37633,  0.4841, 0.41872,   0.352, 0.38744, 0.40562, 0.24347, 0.32926,  0.2214, 0.28687,   0.352, 0.318159;
+
+  }
   
-  // Initialize weights (non-looping)
-  double weight = 0.5/(n_aug_+lambda);
-  weights.fill(weight);
-  weights(0) = lambda/(lambda+n_aug_);
-
-
-  //radar measurement noise standard deviation radius in m
-  //double std_radr = 0.3;
-
-  //radar measurement noise standard deviation angle in rad
-  //double std_radphi = 0.0175;
-
-  //radar measurement noise standard deviation radius change in m/s
-  //double std_radrd = 0.1;
-
-  //create example matrix with predicted sigma points
-  //MatrixXd Xsig_pred = MatrixXd(n_x, 2 * n_aug + 1);
-  //Xsig_pred <<
-  //       5.9374,  6.0640,   5.925,  5.9436,  5.9266,  5.9374,  5.9389,  5.9374,  5.8106,  5.9457,  5.9310,  5.9465,  5.9374,  5.9359,  5.93744,
-  //         1.48,  1.4436,   1.660,  1.4934,  1.5036,    1.48,  1.4868,    1.48,  1.5271,  1.3104,  1.4787,  1.4674,    1.48,  1.4851,    1.486,
-  //        2.204,  2.2841,  2.2455,  2.2958,   2.204,   2.204,  2.2395,   2.204,  2.1256,  2.1642,  2.1139,   2.204,   2.204,  2.1702,   2.2049,
-  //       0.5367, 0.47338, 0.67809, 0.55455, 0.64364, 0.54337,  0.5367, 0.53851, 0.60017, 0.39546, 0.51900, 0.42991, 0.530188,  0.5367, 0.535048,
-  //        0.352, 0.29997, 0.46212, 0.37633,  0.4841, 0.41872,   0.352, 0.38744, 0.40562, 0.24347, 0.32926,  0.2214, 0.28687,   0.352, 0.318159;
-
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
 
@@ -556,25 +561,28 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out, MatrixXd* Xs
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
 
     // extract values for better readibility
-    double p_x = (*Xsig_pred)(0,i);
-    double p_y = (*Xsig_pred)(1,i);
-    double v  = (*Xsig_pred)(2,i);
-    double yaw = (*Xsig_pred)(3,i);
+    double p_x = Xsig_pred_(0,i);
+    double p_y = Xsig_pred_(1,i);
+    double v  = Xsig_pred_(2,i);
+    double yaw = Xsig_pred_(3,i);
 
     double v1 = cos(yaw)*v;
     double v2 = sin(yaw)*v;
 
+    // Cache expensive sqrt operation to avoid duplication.
+    double rMag = sqrt(p_x*p_x + p_y*p_y);
+
     // measurement model
-    Zsig(0,i) = sqrt(p_x*p_x + p_y*p_y);                        //r
-    Zsig(1,i) = atan2(p_y,p_x);                                 //phi
-    Zsig(2,i) = (p_x*v1 + p_y*v2 ) / sqrt(p_x*p_x + p_y*p_y);   //r_dot
+    Zsig(0,i) = rMag;                        //r     - Range
+    Zsig(1,i) = atan2(p_y,p_x);              //phi   - Bearing
+    Zsig(2,i) = (p_x*v1 + p_y*v2 ) / rMag;   //r_dot - Range Rate
   }
 
   //mean predicted measurement
   VectorXd z_pred = VectorXd(n_z);
   z_pred.fill(0.0);
   for (int i=0; i < 2*n_aug_+1; i++) {
-      z_pred = z_pred + weights(i) * Zsig.col(i);
+      z_pred = z_pred + weights_(i) * Zsig.col(i);
   }
 
   //measurement covariance matrix S
@@ -585,15 +593,9 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out, MatrixXd* Xs
     VectorXd z_diff = Zsig.col(i) - z_pred;
 
     //angle normalization
-    // TODO - Fix this
-    //while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
-    //while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+    z_diff(1) = angleNormalization(z_diff(1));
 
-    // John Chen angle normalization logic - taken from Slack forum.
-    if (z_diff(1)> M_PI) z_diff(1) = remainder(z_diff(1), (2.*M_PI)) - M_PI;
-    if (z_diff(1)<-M_PI) z_diff(1) = remainder(z_diff(1), (2.*M_PI)) + M_PI;
-
-    S = S + weights(i) * z_diff * z_diff.transpose();
+    S = S + weights_(i) * z_diff * z_diff.transpose();
   }
 
   //add measurement noise covariance matrix
@@ -603,22 +605,28 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out, MatrixXd* Xs
           0, 0,std_radrd_*std_radrd_;
   S = S + R;
 
-  
-/*******************************************************************************
- * Student part end
- ******************************************************************************/
+  if (TestMode) {
+    /*
+    z_pred =  6.12155
+              0.245993
+              2.10313
 
-  //print result
-  //std::cout << "z_pred: " << std::endl << z_pred << std::endl;
-  //std::cout << "S: " << std::endl << S << std::endl;
 
-  //write result
-  *z_out = z_pred;
-  *S_out = S;
+    S = 
+    0.0946171   -0.000139448  0.00407016
+
+    -0.000139448 0.000617548 -0.000770652
+
+    0.00407016  -0.000770652  0.0180917
+    */
+    cout << "z_pred: " << endl << z_pred << endl;
+    cout << "S: " << endl << S << endl;
+  }
 }
 
 /**
   * Wraps the input angle into the [-pi pi] domain without resorting to loops.
+  * Credit: Adapted from John Chen (Slack formum post)
   * @param {double} angle
   */
 double UKF::angleNormalization(double angle) {
