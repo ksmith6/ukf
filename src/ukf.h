@@ -32,8 +32,11 @@ public:
   ///* state covariance matrix
   MatrixXd P_;
 
-  ///* predicted sigma points matrix
+  ///* sigma points matrix (7x15)
   MatrixXd Xsig_;
+
+  ///* predicted sigma points matrix (5x15)
+  MatrixXd Xsig_pred_;
 
   ///* time when the state is true, in us
   long long time_us_;

@@ -155,6 +155,9 @@ int main(int argc, char* argv[]) {
   out_file_ << "vy_true" << "\t";
   out_file_ << "NIS" << "\n";
 
+  if (true) {
+    number_of_measurements = 3;
+  }
 
   for (size_t k = 0; k < number_of_measurements; ++k) {
     // Call the UKF-based fusion

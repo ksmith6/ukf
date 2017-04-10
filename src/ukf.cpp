@@ -50,13 +50,14 @@ UKF::UKF() {
   /**
   Hint: one or more values initialized above might be wildly off...
   */
-  VectorXd weights_; // TODO
-
+  
   ///* State dimension
   n_x_ = 5;
 
   ///* Augmented state dimension
   n_aug_ = n_x_ + 2;
+
+  VectorXd weights_; //  = VectorXd(2 * n_aug_ + 1);
 
   ///* Sigma point spreading parameter
   lambda_ = 3 - n_aug_;
@@ -73,6 +74,8 @@ UKF::UKF() {
 
   // Container for UKF sigma points.
   MatrixXd Xsig_; 
+
+  MatrixXd Xsig_pred_;
 }
 
 UKF::~UKF() {}
@@ -126,6 +129,8 @@ void UKF::Prediction(double delta_t) {
   Complete this function! Estimate the object's location. Modify the state
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
+  bool DebugThis = true;
+
   if (DebugMode_) {
     cout << " ------- PREDICTION ------- " << endl;
   }
@@ -138,7 +143,10 @@ void UKF::Prediction(double delta_t) {
 
   // ======== 1) Generate Sigma Points ==============
   // Generate matrix to hold sigma points.
-  Xsig_ = MatrixXd(n_aug_, 2*n_x_+1);
+  if (DebugMode_ && DebugThis) { cout << "  Inititalizing Xsig_ " << endl; }
+  Xsig_ = MatrixXd(n_aug_, 2*n_aug_+1);
+  if (DebugMode_ && DebugThis) { cout << "    Xsig_.size()  : (" << Xsig_.rows() << ", " << Xsig_.cols() << ")" << endl; }
+
   
   // Generate augmented sigma points
   AugmentedSigmaPoints();
@@ -220,16 +228,37 @@ void UKF::AugmentedSigmaPoints() {
   Xsig_ = Xsig_aug;
 }
 
+/**
+  * This predicts the sigma points forward/backward some delta_t. 
+  * This algorithm has a test mode, and testing indicates that it is performing nominally.
+  */
 void UKF::SigmaPointPrediction(double delta_t) {
   // MatrixXd* Xsig_out, 
   // MatrixXd* Xsig_pred, 
+  bool DebugThis = false;
+
+  bool TestMode = false;
+  if (TestMode) {
+    delta_t = 0.1;
+    Xsig_ = MatrixXd(n_aug_, 2 * n_aug_ + 1);
+     Xsig_ <<
+    5.7441,  5.85768,   5.7441,   5.7441,   5.7441,   5.7441,   5.7441,   5.7441,   5.63052,   5.7441,   5.7441,   5.7441,   5.7441,   5.7441,   5.7441,
+      1.38,  1.34566,  1.52806,     1.38,     1.38,     1.38,     1.38,     1.38,   1.41434,  1.23194,     1.38,     1.38,     1.38,     1.38,     1.38,
+    2.2049,  2.28414,  2.24557,  2.29582,   2.2049,   2.2049,   2.2049,   2.2049,   2.12566,  2.16423,  2.11398,   2.2049,   2.2049,   2.2049,   2.2049,
+    0.5015,  0.44339, 0.631886, 0.516923, 0.595227,   0.5015,   0.5015,   0.5015,   0.55961, 0.371114, 0.486077, 0.407773,   0.5015,   0.5015,   0.5015,
+    0.3528, 0.299973, 0.462123, 0.376339,  0.48417, 0.418721,   0.3528,   0.3528,  0.405627, 0.243477, 0.329261,  0.22143, 0.286879,   0.3528,   0.3528,
+         0,        0,        0,        0,        0,        0,  0.34641,        0,         0,        0,        0,        0,        0, -0.34641,        0,
+         0,        0,        0,        0,        0,        0,        0,  0.34641,         0,        0,        0,        0,        0,        0, -0.34641;
+  }
+
+
 
   if (DebugMode_) {
     cout << "  b) Predicting Sigma Points Forward" << endl;
   }
 
-  //create matrix with predicted sigma points as columns
-  // MatrixXd Xsig_pred = MatrixXd(n_x_, 2 * n_aug + 1);
+  // re-initialize matrix with predicted sigma points as columns
+  Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
 
   //predict sigma points
   for (int i = 0; i< 2*n_aug_+1; i++)
@@ -269,22 +298,35 @@ void UKF::SigmaPointPrediction(double delta_t) {
     yawd_p = yawd_p + nu_yawdd*delta_t;
 
     //write predicted sigma point into right column
-    Xsig_(0,i) = px_p;
-    Xsig_(1,i) = py_p;
-    Xsig_(2,i) = v_p;
-    Xsig_(3,i) = yaw_p;
-    Xsig_(4,i) = yawd_p;
+    Xsig_pred_(0,i) = px_p;
+    Xsig_pred_(1,i) = py_p;
+    Xsig_pred_(2,i) = v_p;
+    Xsig_pred_(3,i) = yaw_p;
+    Xsig_pred_(4,i) = yawd_p;
   }
+  if (DebugMode_ && DebugThis) { cout << "    Xsig_.size()  : (" << Xsig_.rows() << ", " << Xsig_.cols() << ")" << endl; }
+  if (DebugMode_ && DebugThis) { cout << "    Xsig_ : " << endl << Xsig_ << endl; }
+
+  if (TestMode) {
+    cout << "Xsig_pred_" <<  Xsig_pred_ << endl;
+  }
+
 }
 
+/**
+  * Computes the mean and covariance of the predicted sigma points.
+  * Probably has a bug in it.
+  */
 void UKF::PredictMeanAndCovariance() {
+
+  bool DebugThis = true;
 
   if (DebugMode_) {
     cout << "  c) Predicting mean and covariance" << endl;
   }
 
   //create vector for weights
-  VectorXd weights = VectorXd(2 * n_aug_ + 1);
+  weights_ = VectorXd(2 * n_aug_ + 1);
   
   //create vector for predicted state
   VectorXd x = VectorXd(n_x_);
@@ -292,26 +334,45 @@ void UKF::PredictMeanAndCovariance() {
   //create covariance matrix for prediction
   MatrixXd P = MatrixXd(n_x_, n_x_);
 
-  if (DebugMode_) { cout << "    1) Filling weights" << endl; }
+  if (DebugMode_) { cout << "    1) Populating weights" << endl; }
+  
   // set weights
   double weight_0 = lambda_/(lambda_ + n_aug_);
   double weight = 0.5/(n_aug_+lambda_);
-  weights_.fill(weight);
+
+  if (DebugMode_ && DebugThis) { cout << "       weight_0 = " << weight_0 << endl; }
+  if (DebugMode_ && DebugThis) { cout << "       weight = " << weight << endl; }
+  if (DebugMode_ && DebugThis) { cout << "       weights_.size() = " << weights_.size() << endl; }  
+
+
   weights_(0) = weight_0;
-  if (DebugMode_) { cout << "       weights = " << weights_ << endl; }
+  for (int i=1; i<2*n_aug_ + 1; i++) {
+    weights_(i) = weight;
+  }
+  
+
+  if (DebugMode_ && DebugThis) { cout << "       Filled weights_ with weight " << endl; }
+  if (DebugMode_ && DebugThis) { cout << "       weights_: " << endl << weights_ << endl; }
 
   //predicted state mean
   x.fill(0.0);
+  if (DebugMode_ && DebugThis) { cout << "    Xsig_.size()  : (" << Xsig_.rows() << ", " << Xsig_.cols() << ")" << endl; }
+
+  if (DebugMode_ && DebugThis) { cout << Xsig_.col(0) << endl; }
+
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //iterate over sigma points
-    x = x+ weights_(i) * Xsig_.col(i);
+    double w = weights_(i);
+    x = x + weights_(i) * Xsig_pred_.col(i);
   }
+  if (DebugMode_ && DebugThis) { cout << "      Mean State: " << endl << x << endl;}
 
   //predicted state covariance matrix
   P.fill(0.0);
+  if (DebugMode_ && DebugThis) { cout << "       Filled covariance P with zeros " << endl; }
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //iterate over sigma points
 
     // state difference
-    VectorXd x_diff = Xsig_.col(i) - x;
+    VectorXd x_diff = Xsig_pred_.col(i) - x;
     
     if (DebugMode_) { cout << "x_diff = " << x_diff << endl; }
 
@@ -320,7 +381,8 @@ void UKF::PredictMeanAndCovariance() {
 
     P = P + weights_(i) * x_diff * x_diff.transpose() ;
   }
-
+  if (DebugMode_ && DebugThis) { cout << "      Covariance: " << endl << P << endl; }
+  if (DebugMode_ && DebugThis) { cout << "       Writing output x_ and P_ " << endl; }
   // write result
   x_ = x;
   P_ = P;
