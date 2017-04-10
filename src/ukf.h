@@ -92,6 +92,8 @@ public:
   MatrixXd S_radar_;
   MatrixXd S_laser_;
 
+  int counter;
+
 
 
   /**
