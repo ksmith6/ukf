@@ -27,10 +27,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 3;
+  std_a_ = 1;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 0.2;
+  std_yawdd_ = 2;
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -45,7 +45,7 @@ UKF::UKF() {
   std_radphi_ = 0.03;
 
   // Radar measurement noise standard deviation radius change in m/s
-  std_radrd_ = 0.3;
+  std_radrd_ = 0.7; // 0.3;
 
   /**
   Hint: one or more values initialized above might be wildly off...
@@ -68,7 +68,7 @@ UKF::UKF() {
   ///* the current NIS for laser
   NIS_laser_ = 0.0;
 
-  DebugMode_ = true;
+  DebugMode_ = false;
 
   // Added variables
 
@@ -118,14 +118,24 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     // Second, perform the measurement update based on the measurement type.
     if (meas_package.sensor_type_ == MeasurementPackage::RADAR && use_radar_) {
       // Radar measurment update mode.
-      UpdateRadar(meas_package);
+      bool validMeas = meas_package.raw_measurements_[0] != 0.0 && meas_package.raw_measurements_[1] != 0.0 && meas_package.raw_measurements_[2] != 0.0;
+      if (validMeas) {
+        UpdateRadar(meas_package);
+      } else {
+        cout << "Invalid radar measurement" << endl;
+      }
     } else if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
       // Laser Measurement Update mode.
-      // UpdateLidar(meas_package);
+      bool validMeas = meas_package.raw_measurements_[0] != 0.0 && meas_package.raw_measurements_[1] != 0.0;
+      if (validMeas) {
+        // UpdateLidar(meas_package);
+      } else {
+        cout << "Invalid laser measurement" << endl;
+      }
     } else {
       // Error-handling code for unknown measurement types.
       // Perform no update.
-      cout << "Received unknown measurement type" << endl;
+      cout << "Skipped measurement." << endl;
     }
 
 
@@ -886,7 +896,7 @@ void UKF::Initialization(MeasurementPackage meas_package) {
   * @param {MeasurementPackage} meas_package
   */
 void UKF::InitFilterRadar(MeasurementPackage meas_package) {
-  bool DebugThis = true;
+  bool DebugThis = false;
 
   /*
   Convert radar from polar to cartesian coordinates and initialize state.
@@ -913,9 +923,9 @@ void UKF::InitFilterRadar(MeasurementPackage meas_package) {
   // Populate only the diagonal elements.
   P_(0,0) = std_laspx_ * std_laspx_;
   P_(1,1) = std_laspy_ * std_laspy_;
-  P_(2,2) = 1; // TODO
-  P_(3,3) = 1; // TODO
-  P_(4,4) = 1; // TODO
+  P_(2,2) = 1; //0.2; // TODO
+  P_(3,3) = 1;//0.1; // TODO
+  P_(4,4) = 1;//0.5; // TODO
 
   if (DebugMode_ && DebugThis) {
     cout << "Initial State (RADAR) : " << endl << x_ << endl;
