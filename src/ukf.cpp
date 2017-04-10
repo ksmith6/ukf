@@ -68,7 +68,7 @@ UKF::UKF() {
   ///* the current NIS for laser
   NIS_laser_ = 0.0;
 
-  DebugMode_ = false;
+  DebugMode_ = true;
 
   // Added variables
 
@@ -128,7 +128,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       // Laser Measurement Update mode.
       bool validMeas = meas_package.raw_measurements_[0] != 0.0 && meas_package.raw_measurements_[1] != 0.0;
       if (validMeas) {
-        // UpdateLidar(meas_package);
+        UpdateLidar(meas_package);
       } else {
         cout << "Invalid laser measurement" << endl;
       }
@@ -533,6 +533,71 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   if (DebugMode_) {
     cout << " ------- LASER MEAS UPDATE ------- " << endl;
   }
+
+  int n_z = 2;
+  z_pred_laser_ = VectorXd(n_z);
+  S_laser_ = MatrixXd(n_z, n_z);
+  PredictLaserMeasurement();
+
+  // Update the state with radar measurement.
+  UpdateState(Zsig_laser_, z_pred_laser_, S_laser_, meas_package.raw_measurements_);
+
+}
+
+
+void UKF::PredictLaserMeasurement() {
+  bool TestMode = false;
+  bool DebugThis = true;
+
+  if (DebugMode_) { cout << "  a) Predict Laser Measurement" << endl; }
+
+  //set measurement dimension, laser can measure px, py
+  int n_z = 2;
+
+  //create matrix for sigma points in measurement space
+  Zsig_laser_ = MatrixXd(n_z, 2 * n_aug_ + 1);
+
+  if (DebugMode_ && DebugThis) { cout << "   (Received) Xsig_pred_ : " << endl << Xsig_pred_ << endl;}
+
+  //transform sigma points into measurement space
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
+
+    // extract values for better readibility
+    double p_x = Xsig_pred_(0,i);
+    double p_y = Xsig_pred_(1,i);
+
+    // measurement model
+    Zsig_laser_(0,i) = p_x; // x-position
+    Zsig_laser_(1,i) = p_y; // y-position
+  }
+
+  if (DebugMode_ && DebugThis) { cout << "   Zsig_laser_ : " << endl << Zsig_laser_ << endl;}
+
+  //mean predicted measurement
+
+  z_pred_laser_ = VectorXd(n_z);
+  z_pred_laser_.fill(0.0);
+  for (int i=0; i < 2*n_aug_+1; i++) {
+      z_pred_laser_ = z_pred_laser_ + weights_(i) * Zsig_laser_.col(i);
+  }
+  if (DebugMode_ && DebugThis) { cout << "   z_pred_laser_ : " << endl << z_pred_laser_ << endl;}
+
+  //measurement covariance matrix S
+  S_laser_ = MatrixXd(n_z,n_z);
+  S_laser_.fill(0.0);
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
+    //residual
+    VectorXd z_diff = Zsig_laser_.col(i) - z_pred_laser_;
+
+    S_laser_ = S_laser_ + weights_(i) * z_diff * z_diff.transpose();
+  }
+
+  //add measurement noise covariance matrix
+  MatrixXd R = MatrixXd(n_z,n_z);
+  R <<    std_laspx_*std_laspx_, 0,
+          0, std_laspy_*std_laspy_;
+  S_laser_ = S_laser_ + R;
+
 }
 
 /**
@@ -553,13 +618,19 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     cout << " ------- RADAR MEAS UPDATE ------- " << endl;
   }
 
-  int n_z = 3;
-  z_pred_radar_ = VectorXd(n_z);
-  S_radar_ = MatrixXd(n_z, n_z);
-  PredictRadarMeasurement();
+  double rMag = sqrt(x_(0)*x_(0) + x_(1)*x_(1));
+  if (rMag > 0) {
+    int n_z = 3;
+    z_pred_radar_ = VectorXd(n_z);
+    S_radar_ = MatrixXd(n_z, n_z);
+    PredictRadarMeasurement();
 
-  // Update the state with radar measurement.
-  UpdateState(Zsig_radar_, z_pred_radar_, S_radar_, meas_package.raw_measurements_);
+    // Update the state with radar measurement.
+    UpdateState(Zsig_radar_, z_pred_radar_, S_radar_, meas_package.raw_measurements_);
+  } else if (DebugMode_) {
+    cout << " ---- Skipped Radar Update due to singularity (rMag==0)." << endl;
+  }
+  
 
 }
 
@@ -570,7 +641,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 void UKF::PredictRadarMeasurement() {
 
   bool TestMode = false;
-  bool DebugThis = false;
+  bool DebugThis = true;
 
   if (DebugMode_) { cout << "  a) Predict Radar Measurement" << endl; }
 
@@ -625,7 +696,11 @@ void UKF::PredictRadarMeasurement() {
     // measurement model
     Zsig_radar_(0,i) = rMag;                        //r     - Range
     Zsig_radar_(1,i) = atan2(p_y,p_x);              //phi   - Bearing
-    Zsig_radar_(2,i) = (p_x*v1 + p_y*v2 ) / rMag;   //r_dot - Range Rate
+    if (rMag > 0) {
+      Zsig_radar_(2,i) = (p_x*v1 + p_y*v2 ) / rMag;   //r_dot - Range Rate
+    } else {
+      Zsig_radar_(2,i) = 0;
+    }
   }
 
   if (DebugMode_ && DebugThis) { cout << "   Zsig_radar_ : " << endl << Zsig_radar_ << endl;}
@@ -871,17 +946,18 @@ void UKF::Initialization(MeasurementPackage meas_package) {
   // Next, initialize the state and covariance according to the measurement type.
   if (meas_package.sensor_type_ == MeasurementPackage::RADAR && use_radar_) {
     // Radar measurment update mode.
-    InitFilterRadar(meas_package);
     if (DebugMode_) { 
       cout << "Radar measurement" << endl;
     }
+    InitFilterRadar(meas_package);
+    
     is_initialized_ = true;
   } else if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
     // Laser Measurement Update mode.
-    InitFilterLaser(meas_package);
     if (DebugMode_) { 
       cout << "Laser measurement" << endl;
     }
+    InitFilterLaser(meas_package);
     is_initialized_ = true;
   } else {
     // Error-handling code for unknown measurement types or all measurements disabled.
@@ -943,6 +1019,8 @@ void UKF::InitFilterLaser(MeasurementPackage meas_package) {
   Initialize states.
   NOTE: Initial velocity states initialized with the assumption that the object is stationary.
   */
+  bool DebugThis = true;
+
   float px = meas_package.raw_measurements_[0];
   float py = meas_package.raw_measurements_[1];
   float vMag = 0.0;   // Assumes object is stationary
@@ -961,5 +1039,9 @@ void UKF::InitFilterLaser(MeasurementPackage meas_package) {
   P_(3,3) = 1; // TODO
   P_(4,4) = 1; // TODO
 
+  if (DebugMode_ && DebugThis) {
+    cout << "Initial State (LASER) : " << endl << x_ << endl;
+    cout << "Initial Covariance (LASER) : " << endl << P_ << endl;
+  }
 
 }

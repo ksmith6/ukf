@@ -135,6 +135,7 @@ public:
    */
   void UpdateRadar(MeasurementPackage meas_package);
   void PredictRadarMeasurement();
+  void PredictLaserMeasurement();
   void UpdateState(MatrixXd Zsig, VectorXd z_pred, MatrixXd S, VectorXd z);
 
   void Initialization(MeasurementPackage meas_package);
