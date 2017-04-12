@@ -27,10 +27,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 3; // 0.8; // works for dataset 1
+  std_a_ = 3;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 0.9; // 2; // 2.0 works for dataset 1
+  std_yawdd_ = 0.8;
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -821,8 +821,10 @@ void UKF::UpdateState(MatrixXd Zsig, VectorXd z_pred, MatrixXd S, VectorXd z) {
     Tc = Tc + weights_(i) * x_diff * z_diff.transpose();
   }
 
+  MatrixXd Sinv = S.inverse();
+
   //Kalman gain K;
-  MatrixXd K = Tc * S.inverse();
+  MatrixXd K = Tc * Sinv;
 
   if (DebugMode_ && DebugThis) { cout << "K : " << endl << K << endl; }
   if (DebugMode_ && DebugThis) { cout << "z : " << endl << z << endl; }
@@ -840,6 +842,12 @@ void UKF::UpdateState(MatrixXd Zsig, VectorXd z_pred, MatrixXd S, VectorXd z) {
   x_ = x_ + K * z_diff;
   P_ = P_ - K*S*K.transpose();
 
+  // Write out the NIS calculation
+  if (RadarMode) {
+    NIS_radar_ = z_diff.transpose()*Sinv*z_diff;
+  } else {
+    NIS_laser_ = z_diff.transpose()*Sinv*z_diff;
+  }
 
   if (TestMode || (DebugMode_ && DebugThis)) {
     //print result
