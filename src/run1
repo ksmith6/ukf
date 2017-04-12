@@ -1,2 +1,3 @@
 #!/bin/bash 
-./UnscentedKF ../data/input/sample-laser-radar-measurement-data-1.txt ../data/output/output1.txt
+./UnscentedKF ../data/input/sample-laser-radar-measurement-data-1.txt ../data/output/output1.txt > run1Debug.txt
+tail -n 6 run1Debug.txt

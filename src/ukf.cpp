@@ -15,7 +15,7 @@ using std::endl;
  */
 UKF::UKF() {
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = false;
+  use_laser_ = true;
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
@@ -68,7 +68,7 @@ UKF::UKF() {
   ///* the current NIS for laser
   NIS_laser_ = 0.0;
 
-  DebugMode_ = true;
+  DebugMode_ = false;
 
   // Added variables
 
@@ -143,11 +143,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   } else {
     // Initialization logic.
     Initialization(meas_package);
-    P_ <<  0.0043,   -0.0013,    0.0030,   -0.0022,   -0.0020,
-          -0.0013,    0.0077,    0.0011,    0.0071,    0.0060,
-           0.0030,    0.0011,    0.0054,    0.0007,    0.0008,
-          -0.0022,    0.0071,    0.0007,    0.0098,    0.0100,
-          -0.0020,    0.0060,    0.0008,    0.0100,    0.0123;
     counter = 0;
   }
 
@@ -191,42 +186,9 @@ void UKF::Prediction(double delta_t) {
   // ======== 2) Predict Sigma Points ===============
   SigmaPointPrediction(delta_t);
 
-  cout << "(Inside Prediction(), Post-SigmaPointPrediction: Xsig_pred_ : " << endl << Xsig_pred_ << endl;
-
-
   // ======== 3) Compute mean and covariance of predicted Sigma Points ========
   PredictMeanAndCovariance();
-  cout << "(Inside Prediction(), Post-PredictMeanAndCovariance: Xsig_pred_ : " << endl << Xsig_pred_ << endl;
 
-
-
-}
-
-/**
-  * Deprecated.  
-  *   Generated sigma points for non-augmented state. 
-  */
-void UKF::GenerateSigmaPoints(MatrixXd* Xsig_out) {
-
-  // Create matrix to hold sigma points
-  MatrixXd Xsig = MatrixXd(n_x_, 2*n_x_ + 1);
-
-  // Compute square root of covariance
-  MatrixXd A = P_.llt().matrixL();
-
-  // Store the mean in the first column.
-  Xsig.col(0) = x_;
-  
-  // Compute the spreading parameter
-  float sig = sqrt(lambda_ + n_x_);
-
-  for (int i=0; i<n_x_; i++) {
-      Xsig.col(i+1)      = x_ + sig * A.col(i);
-      Xsig.col(i+1+n_x_) = x_ - sig * A.col(i);
-  }
-
-  // Write output matrix to memory.
-  *Xsig_out = Xsig;
 }
 
 /**
