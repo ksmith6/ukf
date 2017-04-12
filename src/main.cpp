@@ -156,7 +156,7 @@ int main(int argc, char* argv[]) {
   out_file_ << "NIS" << "\n";
 
   if (false) {
-    number_of_measurements = 45;
+    number_of_measurements = 10;
   }
 
   for (size_t k = 0; k < number_of_measurements; ++k) {
